@@ -33,13 +33,25 @@ func Extract(filename string) Name {
 		name.Season, _ = strconv.Atoi(matches[1])
 		name.Episode, _ = strconv.Atoi(matches[2])
 	}
-	namedEpisodePattern := regexp.MustCompile(`(?i)(Episode|Ep)\s?(\d{1,3})`)
-	if matches := namedEpisodePattern.FindStringSubmatch(filename); len(matches) == 3 {
-		name.Episode, _ = strconv.Atoi(matches[2])
+	if name.Episode == -1 {
+		namedEpisodePattern := regexp.MustCompile(`(?i)(Episode|Ep)\s?(\d{1,3})`)
+		if matches := namedEpisodePattern.FindStringSubmatch(filename); len(matches) == 3 {
+			name.Episode, _ = strconv.Atoi(matches[2])
+		}
 	}
-	namedSeasonPattern := regexp.MustCompile(`(?i)(Season)\s?(\d{1,2})`)
-	if matches := namedSeasonPattern.FindStringSubmatch(filename); len(matches) == 3 {
-		name.Season, _ = strconv.Atoi(matches[2])
+	if name.Season == -1 {
+		namedSeasonPattern := regexp.MustCompile(`(?i)(Season)\s?(\d{1,2})`)
+		if matches := namedSeasonPattern.FindStringSubmatch(filename); len(matches) == 3 {
+			name.Season, _ = strconv.Atoi(matches[2])
+		}
+	}
+
+	// Back the episode detection with a more general pattern if not found
+	if name.Episode == -1 {
+		mostSimpleEpisodePattern := regexp.MustCompile(`[\s._-](\d{2,3})[\s._-]`)
+		if matches := mostSimpleEpisodePattern.FindStringSubmatch(filename); len(matches) == 2 {
+			name.Episode, _ = strconv.Atoi(matches[1])
+		}
 	}
 
 	// Extract year
