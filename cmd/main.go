@@ -5,11 +5,11 @@ import (
 	"path"
 	"path/filepath"
 	"strings"
+	"videorepack/ffmpeg"
 	"videorepack/mkv"
 	"videorepack/naming"
 
 	log "github.com/sirupsen/logrus"
-	"golang.org/x/text/language"
 )
 
 const Name = "videorepack"
@@ -63,12 +63,10 @@ func convertVideo(input string) error {
 		}
 	}()
 
-	// Ordenar las pistas
-
 	// Filtrar y modificar pistas
 	originalLang, _ := mkv.FromIETFName("ja")
-	onlyAudios := []string{"ja", "es", "es-ES"}
-	mainLang, _ := mkv.FromIETFName("es-ES")
+	onlyAudios := []string{"ja", "es", "es-ES", "gl", "gl-ES"}
+	mainLang, _ := mkv.FromIETFName("gl")
 
 	hasMainLangAudio := false
 	hasMainLangSub := false
@@ -120,6 +118,34 @@ func convertVideo(input string) error {
 		}
 	}
 
+	// Convertir pistas con codecs no deseados
+	for i := range selected {
+		t := &selected[i]
+		if t.Info.Type == "audio" {
+			if strings.Index(t.Info.Properties.CodecID, "FLAC") != -1 {
+				log.Infof("Convirtiendo pista de audio FLAC a EAC3 (%s) desde <%s>...", t.Info.Properties.LanguageIETF.String(), t.FilePath)
+				targetFilePath := t.FilePath + ".eac3"
+				err := ffmpeg.Convert(ffmpeg.ConvertOptions{
+					Inputs: []ffmpeg.InputFile{{
+						Path: t.FilePath,
+					}},
+					OutputPath: targetFilePath,
+					Tracks: []ffmpeg.TrackConvertOptions{{
+						Index:   "a",
+						Encoder: ffmpeg.EncoderEAC3,
+					}},
+				})
+				if err != nil {
+					log.Warnf("Error al convertir pista de audio: %v. Se continua con la pista original.", err)
+				} else {
+					t.FilePath = targetFilePath
+					t.Info.Codec = "A_EAC3"
+					t.Info.Properties.CodecID = "A_EAC3"
+				}
+			}
+		}
+	}
+
 	// Construir nombre de archivo de salida
 	parsedFileName := naming.Extract(filepath.Base(input))
 	for i := range selected {
@@ -136,12 +162,12 @@ func convertVideo(input string) error {
 	parsedFileName.Authors = []string{"Dussarax"}
 
 	// Delay del español
-	for i := range selected {
+	/*for i := range selected {
 		t := &selected[i]
 		if t.Info.Type == "audio" && t.Info.Properties.LanguageIETF.Tag == language.EuropeanSpanish {
 			t.Operations.Delay = 6000
 		}
-	}
+	}*/
 
 	// Escribir fichero de salida
 	outputFile := path.Join(outputPath, parsedFileName.FileName())

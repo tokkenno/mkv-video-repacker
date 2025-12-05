@@ -80,13 +80,19 @@ func ExtractAll(input string, output string) (*ExtractedContainer, error) {
 
 	var tracks []ExtractedTrack
 	for _, track := range identity.Tracks {
-		output := path.Join(output, fmt.Sprintf("track_%d.%s", track.ID,
-			extForTrack(track.Codec)))
+		outputPath := path.Join(output, fmt.Sprintf("track_%d.%s", track.ID,
+			track.Properties.FileExtension()))
+
+		timeMapPath := ""
+		if track.Type == "video" {
+			timeMapPath = path.Join(output, fmt.Sprintf("track_%d_timemap.txt", track.ID))
+		}
 
 		tracks = append(tracks, ExtractedTrack{
-			Info:       track,
-			FilePath:   output,
-			Operations: TrackOperations{},
+			Info:        track,
+			FilePath:    outputPath,
+			TimeMapPath: timeMapPath,
+			Operations:  TrackOperations{},
 		})
 	}
 
@@ -99,6 +105,18 @@ func ExtractAll(input string, output string) (*ExtractedContainer, error) {
 
 		if _, err := cmd.Output(); err != nil {
 			return nil, fmt.Errorf("mkvextract error: %v", err)
+		}
+
+		if len(t.TimeMapPath) > 0 {
+			// Extraer timecodes si es pista de video
+			cmdTimeMap := exec.Command("mkvextract", "timecodes_v2", input,
+				fmt.Sprintf("%d:%s", t.Info.ID, t.TimeMapPath))
+
+			log.Tracef("Extracting timecodes for track %d to %s", t.Info.ID, t.TimeMapPath)
+
+			if _, err := cmdTimeMap.Output(); err != nil {
+				return nil, fmt.Errorf("mkvextract timecodes error: %v", err)
+			}
 		}
 	}
 
@@ -114,20 +132,27 @@ func ExtractAll(input string, output string) (*ExtractedContainer, error) {
 		}
 	}
 
+	// Extraer ficheros adjuntos si existen
+	var attachments = make([]ExtractedAttachment, 0)
+	if len(identity.Attachments) > 0 {
+		for _, attachment := range identity.Attachments {
+			attachmentOut := path.Join(output, fmt.Sprintf("attachment_%d_%s", attachment.ID, attachment.FileName))
+			cmd := exec.Command("mkvextract", input, "attachments",
+				fmt.Sprintf("%d:%s", attachment.ID, attachmentOut))
+
+			log.Tracef("Extracting attachment %d to %s", attachment.ID, attachmentOut)
+			if _, err := cmd.Output(); err != nil {
+				return nil, fmt.Errorf("mkvextract attachment error: %v", err)
+			}
+			attachments = append(attachments, ExtractedAttachment{
+				Info:     attachment,
+				FilePath: attachmentOut,
+			})
+		}
+	}
+
 	return &ExtractedContainer{
 		Tracks:   sortedExtractedTracks(tracks),
 		Chapters: chaptersOut,
 	}, nil
-}
-
-func extForTrack(t string) string {
-	if strings.HasPrefix(t, "AVC/H.264") {
-		return "h264"
-	} else if strings.HasPrefix(t, "AAC") {
-		return "aac"
-	} else if strings.HasPrefix(t, "SubStationAlpha") {
-		return "ass"
-	} else {
-		return "raw"
-	}
 }

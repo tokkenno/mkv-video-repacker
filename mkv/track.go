@@ -2,6 +2,7 @@ package mkv
 
 import (
 	"fmt"
+	"math/big"
 	"strconv"
 	"strings"
 	"videorepack/types"
@@ -24,7 +25,7 @@ type SubtitleTrackProperties struct {
 }
 
 type TrackProperties struct {
-	UID                int            `json:"uid"`
+	UID                big.Int        `json:"uid"`
 	CodecID            string         `json:"codec_id"`
 	CodecPrivateData   types.HexBytes `json:"codec_private_data"`
 	CodecPrivateLength int            `json:"codec_private_length"`
@@ -50,16 +51,18 @@ type TrackProperties struct {
 func (tp *TrackProperties) FileExtension() string {
 	if strings.Index(tp.CodecID, "V_MPEG4/ISO/AVC") != -1 {
 		return "h264"
+	} else if strings.Index(tp.CodecID, "V_MPEGH/ISO/HEVC") != -1 {
+		return "hevc"
 	} else if strings.Index(tp.CodecID, "A_AAC") != -1 {
 		return "aac"
-	} else if strings.Index(tp.CodecID, "S_TEXT/UTF8") != -1 {
-		return "srt"
 	} else if strings.Index(tp.CodecID, "A_AC3") != -1 {
 		return "ac3"
-	} else if strings.Index(tp.CodecID, "V_MPEG4/ISO/HEVC") != -1 {
-		return "hevc"
 	} else if strings.Index(tp.CodecID, "A_DTS") != -1 {
 		return "dts"
+	} else if strings.Index(tp.CodecID, "A_FLAC") != -1 {
+		return "flac"
+	} else if strings.Index(tp.CodecID, "S_TEXT/UTF8") != -1 {
+		return "srt"
 	}
 
 	return "bin"

@@ -5,12 +5,19 @@ type TrackOperations struct {
 }
 
 type ExtractedTrack struct {
-	Info       Track
-	Operations TrackOperations
-	FilePath   string
+	Info        Track
+	Operations  TrackOperations
+	FilePath    string
+	TimeMapPath string
+}
+
+type ExtractedAttachment struct {
+	Info     Attachment
+	FilePath string
 }
 
 type ExtractedContainer struct {
-	Tracks   []ExtractedTrack
-	Chapters string
+	Tracks      []ExtractedTrack
+	Attachments []ExtractedAttachment
+	Chapters    string
 }

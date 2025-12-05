@@ -3,6 +3,7 @@ package mkv
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"os/exec"
 	"strings"
 	"time"
@@ -30,11 +31,23 @@ type Container struct {
 	Type       string              `json:"type"`
 }
 
+type AttachmentProperties struct {
+	UID big.Int `json:"uid"`
+}
+
+type Attachment struct {
+	ID          int    `json:"id"`
+	ContentType string `json:"content_type"`
+	Description string `json:"description"`
+	FileName    string `json:"file_name"`
+	Size        uint64 `json:"size"`
+}
+
 type Identity struct {
-	Attachments []string  `json:"attachments"` // FIXME: Format correct?
-	Chapters    []Chapter `json:"chapters"`
-	Container   Container `json:"container"`
-	Tracks      []Track   `json:"tracks"`
+	Attachments []Attachment `json:"attachments"`
+	Chapters    []Chapter    `json:"chapters"`
+	Container   Container    `json:"container"`
+	Tracks      []Track      `json:"tracks"`
 }
 
 func Scan(input string) (*Identity, error) {
