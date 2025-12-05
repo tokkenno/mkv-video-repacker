@@ -57,6 +57,8 @@ func (tp *TrackProperties) FileExtension() string {
 		return "aac"
 	} else if strings.Index(tp.CodecID, "A_AC3") != -1 {
 		return "ac3"
+	} else if strings.Index(tp.CodecID, "A_EAC3") != -1 {
+		return "eac3"
 	} else if strings.Index(tp.CodecID, "A_DTS") != -1 {
 		return "dts"
 	} else if strings.Index(tp.CodecID, "A_FLAC") != -1 {
