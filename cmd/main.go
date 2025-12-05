@@ -46,22 +46,25 @@ func main() {
 
 func convertVideo(input string) error {
 	outputPath := filepath.Dir(input)
+	filesToDelete := []string{}
+	defer func() {
+		log.Info("Limpiando archivos intermedios...")
+		for _, f := range filesToDelete {
+			os.Remove(f)
+		}
+	}()
 
 	log.Infof("Extrayendo pistas...")
 	extracted, err := mkv.ExtractAll(input, "")
 	if err != nil {
 		log.Fatalf("Error extrayendo pistas: %v", err)
 	}
-
-	defer func() {
-		log.Info("Limpiando archivos intermedios...")
-		for _, t := range extracted.Tracks {
-			os.Remove(t.FilePath)
+	for _, t := range extracted.Tracks {
+		filesToDelete = append(filesToDelete, t.FilePath)
+		if len(t.TimeMapPath) > 0 {
+			filesToDelete = append(filesToDelete, t.TimeMapPath)
 		}
-		if extracted.Chapters != "" {
-			os.Remove(extracted.Chapters)
-		}
-	}()
+	}
 
 	// Filtrar y modificar pistas
 	originalLang, _ := mkv.FromIETFName("ja")
@@ -139,6 +142,7 @@ func convertVideo(input string) error {
 					log.Warnf("Error al convertir pista de audio: %v. Se continua con la pista original.", err)
 				} else {
 					t.FilePath = targetFilePath
+					filesToDelete = append(filesToDelete, targetFilePath)
 					t.Info.Codec = "A_EAC3"
 					t.Info.Properties.CodecID = "A_EAC3"
 				}
