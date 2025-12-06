@@ -43,7 +43,7 @@ func sortedExtractedTracks(tracks []ExtractedTrack) []ExtractedTrack {
 				if a.Info.Properties.ForcedTrack {
 					return -1
 				} else {
-					return -1
+					return 1
 				}
 			}
 		}
