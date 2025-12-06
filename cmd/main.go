@@ -4,6 +4,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"slices"
 	"strings"
 	"videorepack/ffmpeg"
 	"videorepack/mkv"
@@ -78,9 +79,8 @@ func convertVideo(input string) error {
 	mainLang, _ := mkv.FromIETFName("es-ES")
 
 	// Filtrar y modificar pistas
-	hasMainLangAudio := false
-	hasMainLangSub := false
 	var selected []mkv.ExtractedTrack
+	var defaultTracks = extracted.GetDefaultTracks(mainLang)
 	for _, t := range extracted.Tracks {
 		t.Info.Properties.TrackName = "" // Clear track name
 
@@ -91,13 +91,9 @@ func convertVideo(input string) error {
 			}
 
 			if t.Info.Type == "audio" {
-				// Set default audio track to mainLang if exists
-				if t.Info.Properties.LanguageIETF == mainLang && !hasMainLangAudio {
-					t.Info.Properties.DefaultTrack = true
-					hasMainLangAudio = true
+				t.Info.Properties.DefaultTrack = slices.Index(defaultTracks, t.Info.ID) != -1
+				if t.Info.Properties.DefaultTrack {
 					log.Tracef("Set default audio track: %s", t.Info.Properties.LanguageIETF.String())
-				} else {
-					t.Info.Properties.DefaultTrack = false
 				}
 
 				// Select only specified audio languages
@@ -112,18 +108,9 @@ func convertVideo(input string) error {
 				selected = append(selected, t)
 			}
 		} else if t.Info.Type == "subtitles" {
-			if hasMainLangSub {
-				t.Info.Properties.DefaultTrack = false
-			} else if t.Info.Properties.LanguageIETF == mainLang {
-				if hasMainLangAudio {
-					t.Info.Properties.DefaultTrack = t.Info.Properties.ForcedTrack
-				} else {
-					t.Info.Properties.DefaultTrack = true
-				}
-				if t.Info.Properties.DefaultTrack {
-					hasMainLangSub = true
-					log.Tracef("Set default subtitle track: %s (Forced: %v)", t.Info.Properties.LanguageIETF.String(), t.Info.Properties.ForcedTrack)
-				}
+			t.Info.Properties.DefaultTrack = slices.Index(defaultTracks, t.Info.ID) != -1
+			if t.Info.Properties.DefaultTrack {
+				log.Tracef("Set default subtitle track: %s (Forced: %v)", t.Info.Properties.LanguageIETF.String(), t.Info.Properties.ForcedTrack)
 			}
 
 			selected = append(selected, t)
@@ -180,10 +167,10 @@ func convertVideo(input string) error {
 	}*/
 
 	// Patch file name components
-	parsedFileName.Show = "Dragon Ball"
-	parsedFileName.Year = 1986
+	parsedFileName.Show = "The beginning after the end"
+	parsedFileName.Year = 2025
 	parsedFileName.Season = 1
-	parsedFileName.Origin = "DVDRip"
+	parsedFileName.Origin = "WEBDL"
 	parsedFileName.Authors = []string{"Dussarax"}
 
 	// Escribir fichero de salida
