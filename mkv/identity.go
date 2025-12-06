@@ -80,6 +80,10 @@ func patchLanguagesIdentity(identity *Identity) {
 			tr.Properties.LanguageIETF, _ = FromIETFName("pt-BR")
 		} else if strings.Index(tr.Properties.TrackName, "Arabic (Saudi Arabia)") != -1 {
 			tr.Properties.LanguageIETF, _ = FromIETFName("ar-SA")
+		} else if strings.Index(tr.Properties.TrackName, "Chinese (Taiwan)") != -1 {
+			tr.Properties.LanguageIETF, _ = FromIETFName("zh-TW")
+		} else if strings.Index(tr.Properties.TrackName, "Chinese (Simplified)") != -1 || strings.Index(tr.Properties.TrackName, "Chinese (Mainland China)") != -1 {
+			tr.Properties.LanguageIETF, _ = FromIETFName("zh-CN")
 		}
 	}
 }
