@@ -41,11 +41,17 @@ func main() {
 			}
 		}
 	}
-
 }
 
 func convertVideo(input string) error {
-	outputPath := filepath.Dir(input)
+	outputPath := path.Join(filepath.Dir(input), "repacked")
+	if _, err := os.Stat(outputPath); os.IsNotExist(err) {
+		err := os.Mkdir(outputPath, 0755)
+		if err != nil {
+			log.Fatalf("Error creando directorio de salida: %v", err)
+		}
+	}
+
 	filesToDelete := []string{}
 	defer func() {
 		log.Info("Limpiando archivos intermedios...")
@@ -66,11 +72,12 @@ func convertVideo(input string) error {
 		}
 	}
 
-	// Filtrar y modificar pistas
+	// Configuración de idiomas
 	originalLang, _ := mkv.FromIETFName("ja")
 	onlyAudios := []string{"ja", "es", "es-ES", "gl", "gl-ES"}
-	mainLang, _ := mkv.FromIETFName("gl")
+	mainLang, _ := mkv.FromIETFName("es-ES")
 
+	// Filtrar y modificar pistas
 	hasMainLangAudio := false
 	hasMainLangSub := false
 	var selected []mkv.ExtractedTrack
@@ -88,6 +95,7 @@ func convertVideo(input string) error {
 				if t.Info.Properties.LanguageIETF == mainLang && !hasMainLangAudio {
 					t.Info.Properties.DefaultTrack = true
 					hasMainLangAudio = true
+					log.Tracef("Set default audio track: %s", t.Info.Properties.LanguageIETF.String())
 				} else {
 					t.Info.Properties.DefaultTrack = false
 				}
@@ -114,6 +122,7 @@ func convertVideo(input string) error {
 				}
 				if t.Info.Properties.DefaultTrack {
 					hasMainLangSub = true
+					log.Tracef("Set default subtitle track: %s (Forced: %v)", t.Info.Properties.LanguageIETF.String(), t.Info.Properties.ForcedTrack)
 				}
 			}
 
@@ -162,9 +171,6 @@ func convertVideo(input string) error {
 		}
 	}
 
-	parsedFileName.Origin = "WEBDL"
-	parsedFileName.Authors = []string{"Dussarax"}
-
 	// Delay del español
 	/*for i := range selected {
 		t := &selected[i]
@@ -172,6 +178,13 @@ func convertVideo(input string) error {
 			t.Operations.Delay = 6000
 		}
 	}*/
+
+	// Patch file name components
+	parsedFileName.Show = "Dragon Ball"
+	parsedFileName.Year = 1986
+	parsedFileName.Season = 1
+	parsedFileName.Origin = "DVDRip"
+	parsedFileName.Authors = []string{"Dussarax"}
 
 	// Escribir fichero de salida
 	outputFile := path.Join(outputPath, parsedFileName.FileName())
