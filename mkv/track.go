@@ -65,6 +65,8 @@ func (tp *TrackProperties) FileExtension() string {
 		return "flac"
 	} else if strings.Index(tp.CodecID, "S_TEXT/UTF8") != -1 {
 		return "srt"
+	} else if strings.Index(tp.CodecID, "S_TEXT/ASS") != -1 {
+		return "ass"
 	}
 
 	return "bin"
